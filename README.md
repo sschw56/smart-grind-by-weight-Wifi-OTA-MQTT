@@ -1,4 +1,12 @@
-# Smart Grind-by-Weight
+# My Version of Smart Grind-by-Weight
+
+I moddified a few things so it works better for my settings:
+  - Deactivated Bluetooth
+  - Implemented WiFi
+  - OTA Update via Webserver (http://[ESP32-ID]:8080) which can be toggled in the menu
+      -> known "Bug": After a new firmware.bin was uploaded, the devices reboots and starts with the new firmware, but to upload another firmware.bin (via the webserver) you have to cut power and restart the device (againe)
+  - MQTT (for e.g. HomeAssistant)
+  - different smaller adjustments 
 
 **Turn any grinder into a precision smart grind-by-weight system**
 
