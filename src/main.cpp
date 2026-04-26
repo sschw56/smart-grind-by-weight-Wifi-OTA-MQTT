@@ -13,6 +13,9 @@
 #include "tasks/weight_sampling_task.h"
 #include "tasks/grind_control_task.h"
 #include "tasks/file_io_task.h"
+#include "mqtt/manager.h"
+#include "webserver/ota_webserver.h"
+#include "esp_bt.h"
 
 HardwareManager hardware_manager;
 StateMachine state_machine;
@@ -36,7 +39,11 @@ void setup() {
 #ifdef UI_DEBUG_SERIAL_DELAY_MS
     delay(UI_DEBUG_SERIAL_DELAY_MS);
 #endif
-    
+
+    // Bluetooth deaktivieren
+    esp_bt_controller_disable();
+    esp_bt_controller_deinit();
+
     // Log reset reason to help diagnose unexpected resets/freeze scenarios
     esp_reset_reason_t rr = esp_reset_reason();
     const char* rr_str = "UNKNOWN";
@@ -74,11 +81,13 @@ void setup() {
     // Set up the reference so HardwareManager can query GrindController state
     hardware_manager.set_grind_controller(&grind_controller);
     
-    bluetooth_manager.init(hardware_manager.get_preferences());
+    //bluetooth_manager.init(hardware_manager.get_preferences()); // Bluetooth deaktiviert
+    
+    mqtt_manager.init(&statistics_manager);
     
     // Check for OTA failure to determine initial state
-    String failed_ota_build = bluetooth_manager.check_ota_failure_after_boot();
-    bool ota_failed = !failed_ota_build.isEmpty();
+    String failed_ota_build = ""; // bluetooth_manager.check_ota_failure_after_boot(); // Bluetooth deaktiviert
+    bool ota_failed = false; //!failed_ota_build.isEmpty(); // Bluetooth deaktiviert
 
     // Check calibration status to determine initial screen
     bool is_calibrated = hardware_manager.get_weight_sensor()->is_calibrated();
@@ -102,16 +111,17 @@ void setup() {
         }
     }
     
+    // Bluetooth deaktiviert
     // Set up UI status callback to avoid circular dependency
-    bluetooth_manager.set_ui_status_callback([](const char* status) {
-        if (auto* ota = ui_manager.get_ota_data_export_controller()) {
-            ota->update_status(status);
-        }
-    });
+    //bluetooth_manager.set_ui_status_callback([](const char* status) {
+    //    if (auto* ota = ui_manager.get_ota_data_export_controller()) {
+    //        ota->update_status(status);
+    //    }
+    //});
     
     // Enable BLE by default during bootup with 2-minute timeout
     // (Previously disabled by default for security, now enabled for user convenience)
-    bluetooth_manager.enable_during_bootup();
+    //bluetooth_manager.enable_during_bootup(); // Bluetooth deaktiviert
     
     // Initialize individual task modules BEFORE TaskManager creates FreeRTOS tasks
     // This ensures all task dependencies are ready before tasks start running

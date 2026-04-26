@@ -198,6 +198,9 @@ public:
     // Data access
     uint32_t get_total_flash_sessions() const;
     bool is_logging_active() const { return logging_active; }
+    // Returns the most recently completed session (valid after end_grind_session).
+    // Returns nullptr if no session has been run yet.
+    const GrindSession* get_last_session() const { return current_session; }
     uint32_t get_session_storage_version() const { return session_storage_version; }
     
     // Debug output helpers - conditionally compiled based on debug flags (moved to public for BLE access)

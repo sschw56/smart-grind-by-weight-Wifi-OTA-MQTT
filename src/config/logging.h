@@ -7,7 +7,10 @@ extern BluetoothManager g_bluetooth_manager;
 // Temporary fallback logging - use Serial instead of BLE to avoid circular dependencies
 #include <Arduino.h>
 
-#define LOG_BLE(format, ...) Serial.printf(format, ##__VA_ARGS__)
+void log_and_mqtt_if_error(const char* format, ...);
+
+#define LOG_BLE(format, ...) log_and_mqtt_if_error(format, ##__VA_ARGS__)
+//#define LOG_BLE(format, ...) Serial.printf(format, ##__VA_ARGS__) //Bluetooth deaktiviert
 
 // Replace DEBUG macros to use Serial logging
 #if DEBUG_SERIAL_OUTPUT

@@ -19,3 +19,4 @@
 #include "user.h"
 #include "build_info.h"
 #include "logging.h"
+#include "wifi_mqtt.h"       // WiFi + MQTT configuration

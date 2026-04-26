@@ -20,6 +20,7 @@ struct TaskHandles {
     TaskHandle_t ui_render_task;
     TaskHandle_t bluetooth_task;
     TaskHandle_t file_io_task;
+    TaskHandle_t mqtt_task;
 };
 
 // Inter-task communication queues
@@ -107,6 +108,7 @@ public:
     static void ui_render_task_wrapper(void* parameter);
     static void bluetooth_task_wrapper(void* parameter);
     static void file_io_task_wrapper(void* parameter);
+    static void mqtt_task_wrapper(void* parameter);
     
 private:
     // Task creation helpers
@@ -115,6 +117,7 @@ private:
     bool create_ui_render_task();
     bool create_bluetooth_task();
     bool create_file_io_task();
+    bool create_mqtt_task();
     
     // Queue creation
     bool create_inter_task_queues();

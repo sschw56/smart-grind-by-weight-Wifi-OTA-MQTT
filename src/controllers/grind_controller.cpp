@@ -555,7 +555,8 @@ void GrindController::update() {
         phase != GrindPhase::SETUP && phase != GrindPhase::TARING &&
         phase != GrindPhase::TARE_CONFIRM &&
         grinder->is_motor_settled() &&
-        loop_data.current_weight < -1.0f) {
+        loop_data.current_weight < -1.0f&&
+        mode != GrindMode::TIME) { // When grinding by time mode, skip this check
         timeout_phase = phase;
         grinder->stop();
         last_session_result_ = GrindSessionResult::ERROR;
@@ -582,7 +583,7 @@ void GrindController::update() {
         } else {
             snprintf(timeout_msg, sizeof(timeout_msg), "Timeout");
         }
-        set_error_message(timeout_msg);
+        set_error_message(timeout_msg);        
         switch_phase(GrindPhase::TIMEOUT, loop_data);
     }
 }

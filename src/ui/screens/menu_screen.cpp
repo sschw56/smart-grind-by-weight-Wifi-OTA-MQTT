@@ -41,6 +41,9 @@ void MenuScreen::create(BluetoothManager* bluetooth, GrindController* grind_ctrl
     scale_weight_label = nullptr;
     scale_tare_button = nullptr;
     scale_item = nullptr;
+    webserver_toggle = nullptr;
+    webserver_status_label = nullptr;
+    webserver_url_label = nullptr;
     grinder_purge_mode_radio_group = nullptr;
     grinder_purge_amount_slider = nullptr;
     grinder_purge_amount_label = nullptr;
@@ -135,6 +138,9 @@ void MenuScreen::create_menu_ui() {
     scale_page = lv_menu_page_create(menu, "Scale");
     create_scale_page(scale_page);
 
+    webserver_page = lv_menu_page_create(menu, "Webserver");
+    create_webserver_page(webserver_page);
+
     data_page = lv_menu_page_create(menu, "Logs & Data");
     create_data_page(data_page);
 
@@ -173,8 +179,9 @@ void MenuScreen::create_menu_ui() {
     }
 
     create_separator(main_page, "Settings");
-    lv_obj_t* bluetooth_item = create_menu_item(main_page, "Bluetooth");
-    lv_menu_set_load_page_event(menu, bluetooth_item, bluetooth_page);
+    // Bluetooth deaktiviert
+    //lv_obj_t* bluetooth_item = create_menu_item(main_page, "Bluetooth");
+    //lv_menu_set_load_page_event(menu, bluetooth_item, bluetooth_page);
 
     lv_obj_t* display_item = create_menu_item(main_page, "Display");
     lv_menu_set_load_page_event(menu, display_item, display_page);
@@ -189,6 +196,9 @@ void MenuScreen::create_menu_ui() {
     lv_obj_t* info_item = create_menu_item(main_page, "System Info");
     lv_menu_set_load_page_event(menu, info_item, info_page);
 
+    lv_obj_t* webserver_item = create_menu_item(main_page, "Webserver");
+    lv_menu_set_load_page_event(menu, webserver_item, webserver_page);
+    
     lv_obj_t* data_item = create_menu_item(main_page, "Logs & Data");
     lv_menu_set_load_page_event(menu, data_item, data_page);
 
@@ -252,6 +262,13 @@ void MenuScreen::create_info_page(lv_obj_t* parent) {
    
     create_data_label(parent, "Uptime:", &uptime_label);
     create_data_label(parent, "RAM:", &memory_label);
+
+    create_separator(parent);
+
+    create_data_label(parent, "MQTT:", &mqtt_status_label);
+    create_data_label(parent, "Brok.:", &mqtt_broker_label);
+    create_data_label(parent, "IP:", &wifi_ip_label);
+    create_data_label(parent, "RSSI:", &wifi_rssi_label);
 }
 
 
@@ -467,6 +484,38 @@ void MenuScreen::create_scale_page(lv_obj_t* parent) {
     if (scale_tare_button) {
         lv_obj_add_event_cb(scale_tare_button, EventBridgeLVGL::dispatch_event, LV_EVENT_CLICKED,
                            reinterpret_cast<void*>(static_cast<intptr_t>(ET::MENU_SCALE_TARE)));
+    }
+}
+
+void MenuScreen::create_webserver_page(lv_obj_t* parent) {
+    lv_obj_set_layout(parent, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(parent, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(parent, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    lv_obj_set_scroll_dir(parent, LV_DIR_VER);
+    lv_obj_set_scrollbar_mode(parent, LV_SCROLLBAR_MODE_AUTO);
+
+    create_description_label(parent, "Enable a simple local OTA webserver. After startup, open the shown address in your browser and upload firmware.bin.");
+
+    create_toggle_row(parent, "Enabled", &webserver_toggle);
+
+    create_separator(parent, "Status");
+    create_data_label(parent, "State:", &webserver_status_label);
+    create_data_label(parent, "URL:", &webserver_url_label);
+
+    using ET = EventBridgeLVGL::EventType;
+    if (webserver_toggle) {
+        lv_obj_add_event_cb(webserver_toggle, EventBridgeLVGL::dispatch_event, LV_EVENT_VALUE_CHANGED,
+                           reinterpret_cast<void*>(static_cast<intptr_t>(ET::WEBSERVER_TOGGLE)));
+    }
+
+    if (webserver_status_label) {
+        lv_label_set_text(webserver_status_label, "Stopped");
+        lv_obj_set_style_text_color(webserver_status_label, lv_color_hex(THEME_COLOR_TEXT_SECONDARY), 0);
+    }
+
+    if (webserver_url_label) {
+        lv_label_set_text(webserver_url_label, "--");
     }
 }
 
@@ -988,6 +1037,27 @@ void MenuScreen::update_logging_toggle() {
     }
 }
 
+void MenuScreen::update_webserver_status(bool enabled, const char* status_text, lv_color_t status_color, const char* url) {
+    if (!visible) return;
+
+    if (webserver_toggle) {
+        if (enabled) {
+            lv_obj_add_state(webserver_toggle, LV_STATE_CHECKED);
+        } else {
+            lv_obj_clear_state(webserver_toggle, LV_STATE_CHECKED);
+        }
+    }
+
+    if (webserver_status_label) {
+        lv_label_set_text(webserver_status_label, (status_text && status_text[0]) ? status_text : "--");
+        lv_obj_set_style_text_color(webserver_status_label, status_color, 0);
+    }
+
+    if (webserver_url_label) {
+        lv_label_set_text(webserver_url_label, (url && url[0]) ? url : "--");
+    }
+}
+
 lv_obj_t* MenuScreen::create_menu_item(lv_obj_t* parent, const char* text) {
     lv_obj_t* cont = lv_menu_cont_create(parent);
     style_as_button(cont);
@@ -1203,4 +1273,34 @@ void MenuScreen::update_grind_mode_toggles() {
     }
 
     update_grind_freshness_hours_label(freshness_hours);
+}
+
+void MenuScreen::update_wifi_mqtt_status(bool mqtt_connected, const char* broker, const char* ip, int rssi) {
+    if (!visible) return;
+
+    if (mqtt_status_label) {
+        if (mqtt_connected) {
+            lv_label_set_text(mqtt_status_label, "Connected");
+            lv_obj_set_style_text_color(mqtt_status_label, lv_color_hex(THEME_COLOR_SUCCESS), 0);
+        } else {
+            lv_label_set_text(mqtt_status_label, "Disconnected");
+            lv_obj_set_style_text_color(mqtt_status_label, lv_color_hex(THEME_COLOR_ERROR), 0);
+        }
+    }
+
+    if (mqtt_broker_label)
+        lv_label_set_text(mqtt_broker_label, broker && broker[0] ? broker : "--");
+
+    if (wifi_ip_label)
+        lv_label_set_text(wifi_ip_label, ip && ip[0] ? ip : "--");
+
+    if (wifi_rssi_label) {
+        if (rssi != 0) {
+            char buf[16];
+            snprintf(buf, sizeof(buf), "%d dBm", rssi);
+            lv_label_set_text(wifi_rssi_label, buf);
+        } else {
+            lv_label_set_text(wifi_rssi_label, "--");
+        }
+    }
 }

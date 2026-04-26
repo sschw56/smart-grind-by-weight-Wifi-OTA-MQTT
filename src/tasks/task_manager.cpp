@@ -14,6 +14,7 @@
 #include "../config/constants.h"
 #include <esp_task_wdt.h>
 #include <Arduino.h>
+#include "../mqtt/manager.h"
 
 // Global instance
 TaskManager task_manager;
@@ -133,18 +134,24 @@ bool TaskManager::create_all_tasks() {
         LOG_BLE("ERROR: Failed to create UI render task\n");
         return false;
     }
-    
-    
+
+    /*
     if (!create_bluetooth_task()) {
         LOG_BLE("ERROR: Failed to create bluetooth task\n");
         return false;
     }
+    */  
     
     if (!create_file_io_task()) {
         LOG_BLE("ERROR: Failed to create file I/O task\n");
         return false;
     }
     
+    if (!create_mqtt_task()) {
+        LOG_BLE("ERROR: Failed to create MQTT task\n");
+        return false;        
+    }
+
     return true;
 }
 
@@ -254,6 +261,28 @@ bool TaskManager::create_file_io_task() {
     return true;
 }
 
+bool TaskManager::create_mqtt_task() {
+    BaseType_t result = xTaskCreatePinnedToCore(
+        mqtt_task_wrapper,
+        "MQTT",
+        SYS_TASK_MQTT_STACK_SIZE,
+        nullptr,
+        SYS_TASK_MQTT_PRIORITY,
+        &task_handles.mqtt_task,
+        1  // Core 1 (wie Bluetooth und FileIO)
+    );
+
+    if (result != pdPASS) {
+        LOG_BLE("ERROR: Failed to create MQTT task\n");
+        task_handles.mqtt_task = nullptr;
+        return false;
+    }
+
+    LOG_BLE("✅ MQTT Task created (Core 1, Priority %d)\n", 
+            SYS_TASK_MQTT_PRIORITY);
+    return true;
+}
+
 void TaskManager::suspend_hardware_tasks() {
     if (ota_suspended) return;
     
@@ -319,6 +348,11 @@ void TaskManager::delete_all_tasks() {
     if (task_handles.file_io_task) {
         vTaskDelete(task_handles.file_io_task);
         task_handles.file_io_task = nullptr;
+    }
+
+    if (task_handles.mqtt_task) {
+        vTaskDelete(task_handles.mqtt_task);
+        task_handles.mqtt_task = nullptr;
     }
     
     tasks_initialized = false;
@@ -398,6 +432,11 @@ void TaskManager::file_io_task_wrapper(void* parameter) {
         instance->file_io_task_impl();
         instance->task_handles.file_io_task = nullptr;
     }
+    vTaskDelete(nullptr);
+}
+
+void TaskManager::mqtt_task_wrapper(void* parameter) {
+    mqtt_manager.task_impl();
     vTaskDelete(nullptr);
 }
 
