@@ -1,4 +1,15 @@
-# Smart Grind-by-Weight
+# My Version of Smart Grind-by-Weight
+
+I moddified a few things so it works better for my settings:
+  - disabled auto-turn-off when there is a negative weight while grinding-by-time (autostop still works for gind-by-weight!) so if there is a problem with your scale you still get your coffee in the morning (so you can debug and reassemble everything AFTER your coffee :))
+  - Deactivated Bluetooth
+  - Implemented WiFi
+  - OTA Update via light-weight Webserver (http://[ESP32-ID]:8080) which can be toggled in the menu
+      -> known "Bug": After a new firmware.bin was uploaded, the devices reboots and starts with the new firmware, but to upload another firmware.bin (via the webserver) you have to cut power and restart the device (againe)
+  - MQTT (for e.g. HomeAssistant)
+  - different smaller adjustments
+
+I have a Eureka Mignon Magnifico by the way.
 
 **Turn any grinder into a precision smart grind-by-weight system**
 
