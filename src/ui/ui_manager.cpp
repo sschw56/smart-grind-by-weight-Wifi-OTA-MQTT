@@ -162,7 +162,9 @@ void UIManager::update() {
             break;
 
         case UIState::READY:
-            // Ready state - no special handling needed
+            if (ready_controller_) {
+                ready_controller_->update();
+            }
             break;
             
         default:

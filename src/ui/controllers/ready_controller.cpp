@@ -4,13 +4,55 @@
 #include <lvgl.h>
 #include "../../config/constants.h"
 #include "../../controllers/grind_mode_traits.h"
+#include "../../mqtt/manager.h"
 #include "../event_bridge_lvgl.h"
 #include "../ui_manager.h"
 
 ReadyUIController::ReadyUIController(UIManager* manager)
     : ui_manager_(manager) {}
 
-void ReadyUIController::update() {}
+void ReadyUIController::update() {
+    uint32_t now = millis();
+
+    // Refresh display once per second only
+    if (now - last_timer_display_update_ms_ < 1000) {
+        return;
+    }
+
+    last_timer_display_update_ms_ = now;
+    update_coffee_timer_display();
+}
+
+void ReadyUIController::update_coffee_timer_display() {
+    if (!ui_manager_) {
+        return;
+    }
+
+    uint32_t seconds = 0;
+    char text[32];
+
+    if (!mqtt_manager.get_coffee_timer_seconds(seconds)) {
+        snprintf(text, sizeof(text), "--");
+        ui_manager_->ready_screen.update_coffee_timer_text(text);
+        return;
+    }
+
+    if (seconds < 3600) {
+        uint32_t minutes = seconds / 60;
+        uint32_t remaining_seconds = seconds % 60;
+        snprintf(text, sizeof(text), "%lu:%02lum",
+                 static_cast<unsigned long>(minutes),
+                 static_cast<unsigned long>(remaining_seconds));
+    } else {
+        uint32_t hours = seconds / 3600;
+        uint32_t minutes = (seconds % 3600) / 60;
+        snprintf(text, sizeof(text), "%lu:%02luh",
+                 static_cast<unsigned long>(hours),
+                 static_cast<unsigned long>(minutes));
+    }
+
+    ui_manager_->ready_screen.update_coffee_timer_text(text);
+}
 
 void ReadyUIController::refresh_profiles() {
     if (!ui_manager_ || !ui_manager_->profile_controller) {

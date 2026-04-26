@@ -41,6 +41,7 @@
 #define MQTT_TOPIC_SYSTEM           MQTT_BASE_TOPIC "/system"       // System info
 #define MQTT_TOPIC_STATUS           MQTT_BASE_TOPIC "/status"       // Online/offline
 #define MQTT_TOPIC_ERRORS           MQTT_BASE_TOPIC "/errors"       // System errors
+#define MQTT_TOPIC_COFFEE_TIMER     MQTT_BASE_TOPIC "/coffee_timer_seconds" // Dauer Kaffeemaschine an
 
 // Home Assistant MQTT Discovery prefix (leave as-is unless you changed it in HA)
 #define MQTT_DISCOVERY_PREFIX       "homeassistant"

@@ -9,6 +9,7 @@ private:
     lv_obj_t* tabview;
     lv_obj_t* profile_tabs[4];
     lv_obj_t* weight_labels[3];
+    lv_obj_t* coffee_timer_labels[3];
     lv_obj_t* menu_tab;
     bool visible;
 
@@ -17,6 +18,7 @@ public:
     void show();
     void hide();
     void update_profile_values(const float values[3], GrindMode mode);
+    void update_coffee_timer_text(const char* text);
     void set_active_tab(int tab);
     void set_profile_long_press_handler(lv_event_cb_t handler);
     

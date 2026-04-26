@@ -12,6 +12,7 @@ public:
 
     void register_events();
     void update();
+    void update_coffee_timer_display();
     void refresh_profiles();
     void handle_tab_change(int tab);
     void handle_profile_long_press();
@@ -19,4 +20,5 @@ public:
 
 private:
     UIManager* ui_manager_;
+    uint32_t last_timer_display_update_ms_ = 0;
 };

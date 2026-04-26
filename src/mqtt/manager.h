@@ -56,6 +56,10 @@ public:
     bool is_mqtt_connected()  { return mqtt_client_.connected(); }
     QueueHandle_t get_queue() const { return publish_queue_; }
 
+    // Home Assistant coffee machine timer
+    void handle_message(char* topic, uint8_t* payload, unsigned int length);
+    bool get_coffee_timer_seconds(uint32_t& seconds) const;
+
 private:
     // ── WiFi helpers ─────────────────────────────────────────────────────────
     void wifi_connect();
@@ -90,6 +94,11 @@ private:
     uint32_t last_mqtt_attempt_ms_           = 0;
     uint32_t last_stats_publish_ms_          = 0;
     bool     discovery_published_            = false;
+
+    // Coffee machine timer received from Home Assistant
+    volatile bool coffee_timer_valid_         = false;
+    uint32_t coffee_timer_base_seconds_       = 0;
+    uint32_t coffee_timer_base_millis_        = 0;
 };
 
 // Global instance (mirrors the pattern used by BluetoothManager etc.)
