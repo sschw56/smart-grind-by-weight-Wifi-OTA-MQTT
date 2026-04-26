@@ -34,6 +34,11 @@ void ReadyScreen::create() {
     menu_tab = lv_tabview_add_tab(tabview, "MENU");
     profile_tabs[3] = menu_tab;
 
+    // Anzeige Kaffeemaschine an
+    for (int i = 0; i < 3; i++) {
+        coffee_timer_labels[i] = nullptr;
+    }
+
     // Default weights
     float default_weights[3] = {USER_SINGLE_ESPRESSO_WEIGHT_G, USER_DOUBLE_ESPRESSO_WEIGHT_G, USER_CUSTOM_PROFILE_WEIGHT_G};
     const char* names[3] = {"SINGLE", "DOUBLE", "CUSTOM"};
@@ -55,6 +60,12 @@ void ReadyScreen::create_profile_page(lv_obj_t* parent, int profile_index, const
     lv_obj_set_flex_flow(parent, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(parent, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_gap(parent, 0, 0);
+
+    coffee_timer_labels[profile_index] = lv_label_create(parent);
+    lv_label_set_text(coffee_timer_labels[profile_index], "--");
+    lv_obj_set_style_text_font(coffee_timer_labels[profile_index], &lv_font_montserrat_24, 0);
+    lv_obj_set_style_text_color(coffee_timer_labels[profile_index], lv_color_hex(THEME_COLOR_TEXT_SECONDARY), 0);
+    lv_obj_set_style_text_align(coffee_timer_labels[profile_index], LV_TEXT_ALIGN_CENTER, 0);
 
     lv_obj_t* name_label;
     (void)create_profile_label(parent, &name_label, &weight_labels[profile_index]);
@@ -111,6 +122,14 @@ void ReadyScreen::set_profile_long_press_handler(lv_event_cb_t handler) {
     for (int i = 0; i < 3; i++) {
         if (weight_labels[i]) {
             lv_obj_add_event_cb(weight_labels[i], handler, LV_EVENT_LONG_PRESSED, NULL);
+        }
+    }
+}
+
+void ReadyScreen::update_coffee_timer_text(const char* text) {
+    for (int i = 0; i < 3; i++) {
+        if (coffee_timer_labels[i]) {
+            lv_label_set_text(coffee_timer_labels[i], text ? text : "--");
         }
     }
 }

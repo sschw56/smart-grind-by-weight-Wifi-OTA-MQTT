@@ -34,6 +34,10 @@ void MqttManager::init(StatisticsManager* stats_mgr) {
 
     mqtt_client_.setBufferSize(1024); // Enough for JSON payloads
     mqtt_client_.setServer(MQTT_BROKER_HOST, MQTT_BROKER_PORT);
+
+    mqtt_client_.setCallback([](char* topic, uint8_t* payload, unsigned int length) {
+    mqtt_manager.handle_message(topic, payload, length);
+    });
     
     Serial.println("[MQTT] Initialized");
 }
@@ -178,8 +182,15 @@ bool MqttManager::mqtt_connect() {
 
     if (ok) {
         Serial.println("[MQTT] Broker connected");
+
         // Announce we are online (retained so HA shows it immediately after HA restart)
         mqtt_client_.publish(MQTT_TOPIC_STATUS, "online", /*retain=*/true);
+
+         // Subscribe to Home Assistant coffee machine timer
+        bool sub_ok = mqtt_client_.subscribe(MQTT_TOPIC_COFFEE_TIMER);
+        Serial.printf("[MQTT] Subscribe %s: %s\n",
+                  MQTT_TOPIC_COFFEE_TIMER,
+                  sub_ok ? "OK" : "FAILED");
     } else {
         Serial.printf("[MQTT] Broker connection failed, rc=%d\n", mqtt_client_.state());
     }
@@ -397,4 +408,43 @@ void MqttManager::do_publish_system_info() {
     serializeJson(doc, buf, sizeof(buf));
     bool ok = mqtt_client_.publish(MQTT_TOPIC_SYSTEM, buf, /*retain=*/true);
     Serial.printf("[MQTT] System info published: %s\n", ok ? "OK" : "FAILED");
+}
+
+void MqttManager::handle_message(char* topic, uint8_t* payload, unsigned int length) {
+    if (!topic || strcmp(topic, MQTT_TOPIC_COFFEE_TIMER) != 0) {
+        return;
+    }
+
+    char buffer[16];
+    unsigned int copy_len = length;
+    if (copy_len >= sizeof(buffer)) {
+        copy_len = sizeof(buffer) - 1;
+    }
+
+    memcpy(buffer, payload, copy_len);
+    buffer[copy_len] = '\0';
+
+    char* end_ptr = nullptr;
+    unsigned long seconds = strtoul(buffer, &end_ptr, 10);
+
+    if (end_ptr == buffer) {
+        Serial.printf("[MQTT] Invalid coffee timer payload: %s\n", buffer);
+        return;
+    }
+
+    coffee_timer_base_seconds_ = static_cast<uint32_t>(seconds);
+    coffee_timer_base_millis_ = millis();
+    coffee_timer_valid_ = true;
+
+    Serial.printf("[MQTT] Coffee timer updated from HA: %lus\n", seconds);
+}
+
+bool MqttManager::get_coffee_timer_seconds(uint32_t& seconds) const {
+    if (!coffee_timer_valid_) {
+        return false;
+    }
+
+    uint32_t elapsed_seconds = (millis() - coffee_timer_base_millis_) / 1000;
+    seconds = coffee_timer_base_seconds_ + elapsed_seconds;
+    return true;
 }
