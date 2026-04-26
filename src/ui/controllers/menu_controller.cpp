@@ -19,6 +19,9 @@
 #include "../ui_helpers.h"
 #include "../ui_manager.h"
 #include "../screens/menu_screen.h"
+#include "../../mqtt/manager.h"
+#include "../../webserver/ota_webserver.h"
+#include <WiFi.h>
 
 MenuUIController::MenuUIController(UIManager* manager)
     : ui_manager_(manager) {}
@@ -44,6 +47,7 @@ void MenuUIController::register_events() {
     EventBridgeLVGL::register_handler(ET::BLE_TOGGLE, [this](lv_event_t*) { handle_ble_toggle(); });
     EventBridgeLVGL::register_handler(ET::BLE_STARTUP_TOGGLE, [this](lv_event_t*) { handle_ble_startup_toggle(); });
     EventBridgeLVGL::register_handler(ET::LOGGING_TOGGLE, [this](lv_event_t*) { handle_logging_toggle(); });
+    EventBridgeLVGL::register_handler(ET::WEBSERVER_TOGGLE, [this](lv_event_t*) { handle_webserver_toggle(); });
 
     EventBridgeLVGL::register_handler(ET::GRIND_MODE_SWIPE_TOGGLE, [this](lv_event_t*) { handle_grind_mode_swipe_toggle(); });
     EventBridgeLVGL::register_handler(ET::GRIND_MODE_RADIO_BUTTON, [this](lv_event_t*) { handle_grind_mode_radio_button(); });
@@ -77,6 +81,51 @@ void MenuUIController::update() {
     ui_manager_->menu_screen.update_info(sensor, uptime_ms, free_heap);
     ui_manager_->menu_screen.update_diagnostics(sensor);
     ui_manager_->menu_screen.update_ble_status();
+
+    // WiFi/MQTT status
+    {
+        bool mqtt_ok = mqtt_manager.is_mqtt_connected();
+        String ip = mqtt_manager.is_wifi_connected() ? WiFi.localIP().toString() : "";
+        int rssi = mqtt_manager.is_wifi_connected() ? WiFi.RSSI() : 0;
+        ui_manager_->menu_screen.update_wifi_mqtt_status(mqtt_ok, MQTT_BROKER_HOST, ip.c_str(), rssi);
+    }
+
+    // Webserver status
+    {
+        const auto status = ota_web_server.get_status();
+        const char* status_text = "Stopped";
+        lv_color_t status_color = lv_color_hex(THEME_COLOR_TEXT_SECONDARY);
+
+        switch (status) {
+            case OtaWebServer::Status::STOPPED:
+                status_text = "Stopped";
+                status_color = lv_color_hex(THEME_COLOR_TEXT_SECONDARY);
+                break;
+            case OtaWebServer::Status::STARTING:
+                status_text = "Starting";
+                status_color = lv_color_hex(THEME_COLOR_WARNING);
+                break;
+            case OtaWebServer::Status::RUNNING:
+                status_text = "Started";
+                status_color = lv_color_hex(THEME_COLOR_SUCCESS);
+                break;
+            case OtaWebServer::Status::UPDATING:
+                status_text = "Updating";
+                status_color = lv_color_hex(THEME_COLOR_ACCENT);
+                break;
+            case OtaWebServer::Status::ERROR:
+                status_text = ota_web_server.get_status_message();
+                status_color = lv_color_hex(THEME_COLOR_ERROR);
+                break;
+        }
+
+        ui_manager_->menu_screen.update_webserver_status(
+            ota_web_server.is_running(),
+            status_text,
+            status_color,
+            ota_web_server.get_bind_address()
+        );
+    }
 
     if (ui_manager_->menu_screen.is_scale_page_active()) {
         float display_weight = sensor ? sensor->get_display_weight() : 0.0f;
@@ -300,6 +349,23 @@ void MenuUIController::handle_logging_toggle() {
     prefs.end();
 
     LOG_DEBUG_PRINTLN(logging_enabled ? "Logging enabled" : "Logging disabled");
+}
+
+void MenuUIController::handle_webserver_toggle() {
+    if (!ui_manager_) return;
+
+    auto* toggle = ui_manager_->menu_screen.get_webserver_toggle();
+    if (!toggle) return;
+
+    bool enabled = lv_obj_has_state(toggle, LV_STATE_CHECKED);
+
+    if (enabled) {
+        ota_web_server.start();
+    } else {
+        ota_web_server.stop();
+    }
+
+    update();
 }
 
 void MenuUIController::handle_grind_mode_swipe_toggle() {

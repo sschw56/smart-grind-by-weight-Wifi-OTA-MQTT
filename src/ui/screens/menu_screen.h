@@ -20,11 +20,16 @@ private:
     lv_obj_t* stats_page;
     lv_obj_t* diagnostics_page;
     lv_obj_t* scale_page;
+    lv_obj_t* webserver_page;
 
     // Info tab elements
     lv_obj_t* info_label;
     lv_obj_t* uptime_label;
     lv_obj_t* memory_label;
+    lv_obj_t* mqtt_status_label;
+    lv_obj_t* mqtt_broker_label;
+    lv_obj_t* wifi_ip_label;
+    lv_obj_t* wifi_rssi_label;
     lv_obj_t* instant_label;
     lv_obj_t* samples_label;
     lv_obj_t* raw_label;
@@ -49,6 +54,9 @@ private:
     lv_obj_t* ble_status_label;
     lv_obj_t* ble_timer_label;
     lv_obj_t* logging_toggle;
+    lv_obj_t* webserver_toggle;
+    lv_obj_t* webserver_status_label;
+    lv_obj_t* webserver_url_label;
     lv_obj_t* brightness_normal_slider;
     lv_obj_t* brightness_screensaver_slider;
     lv_obj_t* brightness_normal_label;
@@ -102,6 +110,7 @@ public:
     void show();
     void hide();
     void update_info(const WeightSensor* weight_sensor, unsigned long uptime_ms, size_t free_heap);
+    void update_wifi_mqtt_status(bool mqtt_connected, const char* broker, const char* ip, int rssi);
     void update_diagnostics(WeightSensor* weight_sensor);
     void update_ble_status();
     void refresh_statistics(bool show_overlay = true);
@@ -109,6 +118,7 @@ public:
     void update_brightness_sliders();
     void update_bluetooth_startup_toggle();
     void update_logging_toggle();
+    void update_webserver_status(bool enabled, const char* status_text, lv_color_t status_color, const char* url);
     void update_grind_mode_toggles();
     void update_grinder_purge_amount_label(float amount_g);
     void update_grind_freshness_hours_label(float hours);
@@ -128,6 +138,7 @@ public:
     lv_obj_t* get_ble_toggle() const { return ble_toggle; }
     lv_obj_t* get_ble_startup_toggle() const { return ble_startup_toggle; }
     lv_obj_t* get_logging_toggle() const { return logging_toggle; }
+    lv_obj_t* get_webserver_toggle() const { return webserver_toggle; }
     lv_obj_t* get_refresh_stats_button() const { return refresh_stats_button; }
     lv_obj_t* get_diag_reset_button() const { return diag_reset_button; }
     lv_obj_t* get_brightness_normal_slider() const { return brightness_normal_slider; }
@@ -147,7 +158,7 @@ private:
     void create_display_page(lv_obj_t* parent);
     void create_grind_mode_page(lv_obj_t* parent);
     void create_scale_page(lv_obj_t* parent);
-    void create_data_page(lv_obj_t* parent);
+    void create_webserver_page(lv_obj_t* parent);void create_data_page(lv_obj_t* parent);
     void create_stats_page(lv_obj_t* parent);
     void create_diagnostics_page(lv_obj_t* parent);
     lv_obj_t* create_separator(lv_obj_t* parent, const char* text = nullptr);

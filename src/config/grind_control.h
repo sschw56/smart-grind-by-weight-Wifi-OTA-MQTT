@@ -30,7 +30,7 @@ enum class GrinderPurgeMode {
 //------------------------------------------------------------------------------
 // Main accuracy and timeout settings
 #define GRIND_ACCURACY_TOLERANCE_G 0.03f                                  // Final target accuracy tolerance
-#define GRIND_TIMEOUT_SEC 60                                              // Maximum time for grind operation
+#define GRIND_TIMEOUT_SEC 30                                              // Maximum time for grind operation
 #define GRIND_MAX_PULSE_ATTEMPTS 10                                       // Maximum pulse corrections before stopping
 
 // Flow rate detection
@@ -54,8 +54,6 @@ enum class GrinderPurgeMode {
 // TIME MODE PULSE SETTINGS
 //------------------------------------------------------------------------------
 #define GRIND_TIME_PULSE_DURATION_MS 100                                        // Duration of additional pulses in time mode (milliseconds)
-
-
 
 //------------------------------------------------------------------------------
 // FLOW RATE PARAMETERS

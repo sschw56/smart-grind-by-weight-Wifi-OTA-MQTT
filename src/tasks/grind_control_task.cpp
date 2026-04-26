@@ -6,6 +6,7 @@
 #include "../config/constants.h"
 #include <Arduino.h>
 #include <esp_task_wdt.h>
+#include "../mqtt/manager.h"
 
 // Global instance
 GrindControlTask grind_control_task;
@@ -192,6 +193,17 @@ void GrindControlTask::monitor_grind_state() {
         grind_active = false;
         uint32_t grind_duration = millis() - grind_start_time;
         LOG_BLE("GrindControlTask: Grind session ended (duration: %lums)\n", grind_duration);
+
+        // Publish completed session to Home Assistant via MQTT.
+        // get_last_session() returns the just-finished GrindSession from PSRAM.
+        if (logger) {
+            const GrindSession* last = logger->get_last_session();
+            if (last) {
+                bool queued = mqtt_manager.publish_session(*last);
+                LOG_BLE("GrindControlTask: MQTT session publish %s\n",
+                        queued ? "queued" : "queue full - skipped");
+            }
+        }
     }
 }
 
