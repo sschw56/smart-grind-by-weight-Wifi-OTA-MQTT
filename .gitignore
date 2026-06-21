@@ -25,3 +25,6 @@ failed_session_*.bin
 
 # Git worktrees
 .worktrees/
+
+# Secrets
+src/config/wifi_mqtt.h
